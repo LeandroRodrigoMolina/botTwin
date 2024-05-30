@@ -43,6 +43,7 @@ async def on_ready():
     # Iniciar tareas de verificación
     auto_check_live.start()  # Inicia la tarea para verificar si Twinsensei está en vivo
     check_new_short.start()  # Inicia la tarea para verificar nuevos shorts
+    check_latest_video.start()  # Inicia la tarea para verificar nuevos videos
 
     # Iniciar la tarea de cambio de estado cíclico
     cycle_status.start()
@@ -91,5 +92,24 @@ async def cycle_status():
     for status in statuses:
         await client.change_presence(status=discord.Status.online, activity=status)
         await asyncio.sleep(30)
+
+@tasks.loop(minutes=1)
+async def check_latest_video():
+    try:
+        video_url = await find_latest_video(token_1.twin_channel_id)
+        if video_url:
+            general_channel = client.get_channel(int(test_channel))
+            if general_channel:
+                await general_channel.send(f'@everyone ¡¡Twin subió un NUEVO VIDEO!! Míralo aquí: \n{video_url}')
+                logging.info(f"Enviado mensaje de nuevo video: {video_url}")
+            else:
+                print("No se encontró el canal para enviar el mensaje.")
+        else:
+            print("No se encontraron nuevos videos.")
+    except Exception as e:
+        error_channel = client.get_channel(int(test_channel))
+        if error_channel:
+            await error_channel.send(f"Ocurrió un error en check_latest_video: {e}")
+        logging.error(f"Error en check_latest_video: {e}")
 
 client.run(token_1.token())
