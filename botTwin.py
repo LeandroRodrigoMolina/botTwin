@@ -48,7 +48,7 @@ async def on_ready():
     # Iniciar la tarea de cambio de estado cíclico
     cycle_status.start()
 
-@tasks.loop(minutes=1)  # Verifica cada 1 minuto
+@tasks.loop(minutes=2)  # Verifica cada 1 minuto
 async def auto_check_live():
     try:
         channel = client.get_channel(int(test_channel))  # stream twin
@@ -63,7 +63,7 @@ async def auto_check_live():
             await error_channel.send(f"Ocurrió un error en auto_check_live: {e}")
         logging.error(f"Error en auto_check_live: {e}")
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=2)
 async def check_new_short():
     try:
         playlist_id = token_1.playlist_id
@@ -83,7 +83,7 @@ async def check_new_short():
             await error_channel.send(f"Ocurrió un error en check_new_short: {e}")
         logging.error(f"Error en check_new_short: {e}")
 
-@tasks.loop(seconds=30)  # Cambia el estado del bot cada 30 segundos
+@tasks.loop(seconds=120)  # Cambia el estado del bot cada 30 segundos
 async def cycle_status():
     statuses = [
         discord.Game(name="Esperando que Twin Sensei haga directo!!"),
@@ -93,7 +93,7 @@ async def cycle_status():
         await client.change_presence(status=discord.Status.online, activity=status)
         await asyncio.sleep(30)
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=2)
 async def check_latest_video():
     try:
         video_url = await find_latest_video(token_1.twin_channel_id)
@@ -111,5 +111,10 @@ async def check_latest_video():
         if error_channel:
             await error_channel.send(f"Ocurrió un error en check_latest_video: {e}")
         logging.error(f"Error en check_latest_video: {e}")
+
+@client.command(name="github")
+async def github_repo(ctx):
+    repo_url = "https://github.com/LeandroRodrigoMolina/botTwin"
+    await ctx.send(f"Aquí está el repositorio de GitHub del bot: {repo_url}")
 
 client.run(token_1.token())
