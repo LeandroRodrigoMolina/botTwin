@@ -41,8 +41,7 @@ async def on_ready():
         logging.info("El bot está en línea y envió un mensaje de inicio.")
 
     # Iniciar tareas de verificación
-    auto_check_live.start()  # Inicia la tarea para verificar si Twinsensei está en vivo
-    check_new_short.start()  # Inicia la tarea para verificar nuevos shorts
+    #auto_check_live.start()  # Inicia la tarea para verificar si Twinsensei está en vivo
     check_latest_video.start()  # Inicia la tarea para verificar nuevos videos
 
     # Iniciar la tarea de cambio de estado cíclico
@@ -62,26 +61,6 @@ async def auto_check_live():
         if error_channel:
             await error_channel.send(f"Ocurrió un error en auto_check_live: {e}")
         logging.error(f"Error en auto_check_live: {e}")
-
-@tasks.loop(minutes=2)
-async def check_new_short():
-    try:
-        playlist_id = token_1.playlist_id
-        video_id = await find_new_short(playlist_id)
-        if video_id:
-            general_channel = client.get_channel(int(test_channel))
-            if general_channel:
-                await general_channel.send(f'@everyone ¡¡Twin subió un NUEVO SHORT!! Míralo aquí: \n{video_id}')
-                logging.info(f"Enviado mensaje de nuevo short: {video_id}")
-            else:
-                print("No se encontró el canal para enviar el mensaje.")
-        else:
-            print("No se encontraron Shorts en los últimos videos.")
-    except Exception as e:
-        error_channel = client.get_channel(int(test_channel))
-        if error_channel:
-            await error_channel.send(f"Ocurrió un error en check_new_short: {e}")
-        logging.error(f"Error en check_new_short: {e}")
 
 @tasks.loop(seconds=120)  # Cambia el estado del bot cada 30 segundos
 async def cycle_status():

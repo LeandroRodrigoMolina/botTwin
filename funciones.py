@@ -1,3 +1,4 @@
+import os
 from googleapiclient.discovery import build
 import isodate
 import aiohttp
@@ -68,143 +69,62 @@ def getLiveJson(scripts):
     except IndexError:
         return None
 
-# Funciones para manejar el último ID del short enviado
-def load_last_short_id(file_path):
-    """Carga el último ID del short enviado desde un archivo."""
+# Funciones para manejar el registro de IDs de videos subidos
+def load_video_ids(file_path):
+    """Carga todos los IDs de videos subidos desde un archivo."""
     try:
         with open(file_path, 'r') as file:
-            return file.read().strip()
+            return set(file.read().strip().split('\n'))
     except FileNotFoundError:
-        return None
+        return set()
 
-def save_last_short_id(video_id, file_path):
-    """Guarda el último ID del short enviado en un archivo."""
-    with open(file_path, 'w') as file:
-        file.write(video_id)
+def save_video_id(video_id, file_path):
+    """Agrega un ID de video al archivo de registros."""
+    with open(file_path, 'a') as file:
+        file.write(f"{video_id}\n")
 
-# Archivo para guardar el último ID del short enviado
-last_short_file = './last_short_id.txt'
-
-def get_playlist_videos(playlist_id, last_short_id=None):
-    """Generador que obtiene los videos de una lista de reproducción."""
-    request = youtube.playlistItems().list(
-        part="snippet",
-        playlistId=playlist_id,
-        maxResults=50
-    )
-    while request:
-        response = request.execute()
-        for item in response['items']:
-            video_id = item['snippet']['resourceId']['videoId']
-            if video_id == last_short_id:
-                return  # Detiene la iteración si llega al último short registrado
-            yield video_id
-        request = youtube.playlistItems().list_next(request, response)
-
-async def get_current_live_video_id():
-    """Obtiene el ID del video en vivo actual."""
-    ytUserName = 'twinsensei'
-    ytUrl = f"https://www.youtube.com/@{ytUserName}/live"
-    async with session.get(ytUrl, cookies={'CONSENT': 'YES+42'}) as response:
-        page = await response.text()
-        soup = BeautifulSoup(page, "html.parser")
-        live = soup.find("link", {"rel": "canonical"})
-        if live:
-            return live['href'].split('=')[-1]  # Devolver el ID del video
-        return None
-
-async def find_new_short(playlist_id):
-    """Encuentra un nuevo short en la lista de reproducción, verificando que no sea un stream en vivo."""
-    last_short_id = load_last_short_id(last_short_file)
-    live_video_id = await get_current_live_video_id()  # Obtener el ID del video en vivo si está disponible
-    for video_id in get_playlist_videos(playlist_id, last_short_id):
-        if video_id == live_video_id:
-            continue  # Ignorar si el short es un stream en vivo
-        
-        # Verificar el tipo de video
-        video_details = youtube.videos().list(
-            part="liveStreamingDetails,contentDetails",
-            id=video_id
-        ).execute()
-        
-        if video_details['items']:
-            live_streaming_details = video_details['items'][0].get('liveStreamingDetails')
-            if live_streaming_details:  # Si tiene detalles de transmisión en vivo, es un directo
-                continue
-            
-            duration = video_details['items'][0]['contentDetails']['duration']
-            duration_seconds = isodate.parse_duration(duration).total_seconds()
-            if duration_seconds < 60:
-                print("Espera de 20 segundos")
-                await asyncio.sleep(20)  # Esperar 20 segundos antes de verificar de nuevo
-                print("Ya pasó la espera")
-                # Verificar de nuevo la duración
-                video_details = youtube.videos().list(
-                    part="contentDetails",
-                    id=video_id
-                ).execute()
-                if video_details['items']:
-                    duration = video_details['items'][0]['contentDetails']['duration']
-                    duration_seconds = isodate.parse_duration(duration).total_seconds()
-                    if duration_seconds < 60:
-                        save_last_short_id(video_id, last_short_file)
-                        print(f"Nuevo short confirmado después de 20 segundos: https://youtu.be/{video_id}")
-                        return f"https://youtu.be/{video_id}"
-    return None
-
-# Funciones para manejar el último ID del video subido
-def load_last_video_id(file_path):
-    """Carga el último ID del video subido desde un archivo."""
-    try:
-        with open(file_path, 'r') as file:
-            return file.read().strip()
-    except FileNotFoundError:
-        return None
-
-def save_last_video_id(video_id, file_path):
-    """Guarda el último ID del video subido en un archivo."""
-    with open(file_path, 'w') as file:
-        file.write(video_id)
-
-# Archivo para guardar el último ID del video subido
-last_video_file = './last_video_id.txt'
+# Archivo para guardar los IDs de los videos subidos
+video_ids_file = './video_ids.txt'
 
 async def find_latest_video(channel_id):
-    """Encuentra el último video subido en el canal que no sea un short ni un directo."""
-    last_video_id = load_last_video_id(last_video_file)
-    last_live_id = load_last_live_id(last_live_file)
+    """Busca el último video subido en un canal de YouTube."""
     request = youtube.search().list(
         part="snippet",
         channelId=channel_id,
         order="date",
-        maxResults=5,  # Verificar los últimos 5 videos para asegurarse de que no sean shorts
+        maxResults=3,  # Verificar los últimos 3 videos para asegurarse de que no sean directos
         type="video"  # Solo buscar videos
     )
     response = request.execute()
+    if len(response['items']) != 3:
+        print("Items del json: ",len(response['items']))
+        return None, None  # Asegurarse de que haya exactamente 3 videos en la respuesta
     
+    recorded_ids = load_video_ids(video_ids_file)
     for item in response['items']:
-        video_id = item['id']['videoId']
-        
-        # Ignorar si el video es el último directo conocido o ya fue publicado
-        if video_id == last_live_id or video_id == last_video_id:
-            return None  # Detener la búsqueda y no retornar nada
-        
-        video_details = youtube.videos().list(
-            part="liveStreamingDetails,contentDetails",
-            id=video_id
-        ).execute()
-        
-        if video_details['items']:
-            # Verificar si es un directo
-            live_streaming_details = video_details['items'][0].get('liveStreamingDetails')
-            if live_streaming_details:
-                return None  # Detener la búsqueda y no retornar nada
-            
-            duration = video_details['items'][0]['contentDetails']['duration']
-            duration_seconds = isodate.parse_duration(duration).total_seconds()
-            if duration_seconds >= 60:  # Asegurarse de que no sea un short
-                save_last_video_id(video_id, last_video_file)
-                print(f"Nuevo video confirmado: https://youtu.be/{video_id}")
-                return f"https://youtu.be/{video_id}"
-    
-    return None
+        if item['snippet']['liveBroadcastContent'] == 'none':
+            video_id = item['id']['videoId']
+            if video_id in recorded_ids:  # Verificar si el ID no está en el registro
+                video_url = f"https://youtu.be/{video_id}"
+                print("video en el registro", video_url)
+                break
+            else:
+                save_video_id(video_id, video_ids_file)
+                video_url = f"https://youtu.be/{video_id}"
+                title = item['snippet']['title']
+                return video_url, title
+    return None, None
+
+# Uso de las funciones
+async def main():
+    await init_http_client()
+    channel_id = token_1.twin_channel_id
+    video_url, title = await find_latest_video(channel_id)
+    if video_url and title:
+        print(f"Nuevo video subido: {title} - {video_url}")
+    else:
+        print("No hay nuevos videos subidos.")
+    await close_http_client()
+
+if __name__ == "__main__":
+    asyncio.run(main())
