@@ -20,7 +20,7 @@ async def test_everyone(ctx):
     else:
         await ctx.send("No tienes permiso para usar este comando.")
 
-@client.command(name="ayuda")
+@client.command(name="ayudaTwin")
 async def my_help(ctx):
     help_message = """
     **Comandos disponibles:**
@@ -67,10 +67,11 @@ async def auto_check_live():
 async def cycle_status():
     statuses = [
         discord.Game(name="Esperando que Twin Sensei haga directo!!"),
-        discord.Game(name="Esperando que twin suba un nuevo Short!!!"),
+        discord.Game(name="Esperando que Twin suba un nuevo Short!!!"),
     ]
     for status in statuses:
         await client.change_presence(status=discord.Status.online, activity=status)
+        print("Se cambio status")
         await asyncio.sleep(30)
 
 @tasks.loop(minutes=20)
