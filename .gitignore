@@ -1,2 +1,7 @@
 token_1.py
 __pycache__
+bot.log
+live_stream_ids.txt
+min_date.txt
+video_ids.txt
+.idea
