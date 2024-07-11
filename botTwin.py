@@ -3,6 +3,7 @@ from discord.ext import tasks, commands
 import discord
 import token_1
 import logging
+import asyncio
 
 test_channel = token_1.test_bot
 stream_channel = token_1.stream_twin
@@ -13,12 +14,14 @@ client = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 # Configuración del logger
 logging.basicConfig(level=logging.INFO, filename='bot.log', format='%(asctime)s:%(levelname)s:%(message)s')
 
+
 @client.command()
 async def test_everyone(ctx):
     if ctx.author.id in token_1.allowed_user_ids:
         await ctx.send(f"{ctx.author.mention} Este es un mensaje de prueba para @everyone")
     else:
         await ctx.send("No tienes permiso para usar este comando.")
+
 
 @client.command(name="ayudaTwin")
 async def my_help(ctx):
@@ -29,12 +32,14 @@ async def my_help(ctx):
     """
     await ctx.send(help_message)
 
+
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
-    await client.change_presence(status=discord.Status.online, activity=discord.Game(name="Esperando que Twin Sensei haga directo!!"))
+    await client.change_presence(status=discord.Status.online,
+                                 activity=discord.Game(name="Esperando que Twin Sensei haga directo!!"))
     await init_http_client()  # Initialize the aiohttp client session
-    
+
     # Enviar un mensaje de inicio a un canal específico
     startup_channel = client.get_channel(int(test_channel))
     if startup_channel:
@@ -45,8 +50,11 @@ async def on_ready():
     auto_check_live.start()  # Inicia la tarea para verificar si Twinsensei está en vivo
     check_latest_video.start()  # Inicia la tarea para verificar nuevos videos
 
-    # Iniciar la tarea de cambio de estado cíclico
-    #cycle_status.start()
+    """"
+    Iniciar la tarea de cambio de estado cíclico
+    cycle_status.start() 
+    """
+
 
 @tasks.loop(minutes=1)  # Verifica cada 1 minuto
 async def auto_check_live():
@@ -63,16 +71,18 @@ async def auto_check_live():
             await error_channel.send(f"Ocurrió un error en auto_check_live: {e}")
         logging.error(f"Error en auto_check_live: {e}")
 
-@tasks.loop(seconds=120)  # Cambia el estado del bot cada 30 segundos
+
+@tasks.loop(seconds=120)  # Cambia el estado del bot cada 120 segundos
 async def cycle_status():
     statuses = [
-        discord.Game(name="Esperando que Twin Sensei haga directo!!"),
+        discord.Game(name="Esperando que Twin Sensei haga Directo!!"),
         discord.Game(name="Esperando que Twin suba un nuevo Short!!!"),
     ]
     for status in statuses:
         await client.change_presence(status=discord.Status.online, activity=status)
         print("Se cambio status")
         await asyncio.sleep(30)
+
 
 @tasks.loop(minutes=20)
 async def check_latest_video():
@@ -81,7 +91,8 @@ async def check_latest_video():
         if video_url:
             general_channel = client.get_channel(int(main_channel))
             if general_channel:
-                await general_channel.send(f'@everyone ¡¡Twin subió un NUEVO VIDEO **{title}**!! Míralo aquí: \n{video_url}')
+                await general_channel.send(
+                    f'@everyone ¡¡Twin subió un NUEVO VIDEO **{title}**!! Míralo aquí: \n{video_url}')
                 logging.info(f"Enviado mensaje de nuevo video: {video_url}")
             else:
                 print("No se encontró el canal para enviar el mensaje.")
@@ -93,9 +104,11 @@ async def check_latest_video():
             await error_channel.send(f"Ocurrió un error en check_latest_video: {e}")
         logging.error(f"Error en check_latest_video: {e}")
 
+
 @client.command(name="github")
 async def github_repo(ctx):
     repo_url = "https://github.com/LeandroRodrigoMolina/botTwin"
     await ctx.send(f"Aquí está el repositorio de GitHub del bot: {repo_url}")
 
-client.run(token_1.token())
+
+client.run(token_1.token)
