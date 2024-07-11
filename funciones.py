@@ -5,12 +5,12 @@ import os
 from bs4 import BeautifulSoup
 from datetime import datetime
 import logging
+from token_1 import *
 
 # Inicialización de variables globales
 session = None  # Sesión global para aiohttp
 loaded_live_stream_ids = set()
 loaded_video_ids = set()
-api_key = os.getenv('YOUTUBE_API_KEY')
 
 # Construcción del servicio de la API de YouTube
 youtube = build('youtube', 'v3', developerKey=api_key)
