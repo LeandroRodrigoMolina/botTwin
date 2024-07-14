@@ -29,8 +29,28 @@ async def my_help(ctx):
     **Comandos disponibles:**
     `!test_everyone` - Enviar un mensaje de prueba a @everyone (solo usuarios permitidos).
     `!ayuda` - Mostrar este mensaje de ayuda.
+    `!esja <texto>` - Traducir texto del español al japonés.
+    `!jaes <texto>` - Traducir texto del japonés al español.
     """
     await ctx.send(help_message)
+
+
+@client.command(name="esja")
+async def translate_es_to_ja_command(ctx, *, text: str):
+    translation = translate_es_to_ja(text)
+    await ctx.send(f"Traducción al japonés: {translation}")
+
+
+@client.command(name="jaes")
+async def translate_ja_to_es_command(ctx, *, text: str):
+    translation = translate_ja_to_es(text)
+    await ctx.send(f"Traducción al español: {translation}")
+
+
+@client.command(name="github")
+async def github_repo(ctx):
+    repo_url = "https://github.com/LeandroRodrigoMolina/botTwin"
+    await ctx.send(f"Aquí está el repositorio de GitHub del bot: {repo_url}")
 
 
 @client.event
@@ -103,12 +123,5 @@ async def check_latest_video():
         if error_channel:
             await error_channel.send(f"Ocurrió un error en check_latest_video: {e}")
         logging.error(f"Error en check_latest_video: {e}")
-
-
-@client.command(name="github")
-async def github_repo(ctx):
-    repo_url = "https://github.com/LeandroRodrigoMolina/botTwin"
-    await ctx.send(f"Aquí está el repositorio de GitHub del bot: {repo_url}")
-
 
 client.run(token_1.token)

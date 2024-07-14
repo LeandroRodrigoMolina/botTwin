@@ -5,6 +5,7 @@ import os
 from bs4 import BeautifulSoup
 from datetime import datetime
 import logging
+import requests
 from token_1 import *
 
 # Inicialización de variables globales
@@ -128,3 +129,39 @@ def save_min_date(min_date, file_path):
     """Guarda la fecha mínima en un archivo."""
     with open(file_path, 'w') as file:
         file.write(min_date.strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+
+def translate_es_to_ja(text):
+    url = 'https://api-free.deepl.com/v2/translate'
+    params = {
+        'auth_key': DEEPL_API_KEY,
+        'text': text,
+        'source_lang': 'ES',
+        'target_lang': 'JA'
+    }
+    try:
+        response = requests.post(url, data=params)
+        response.raise_for_status()
+        result = response.json()
+        return result['translations'][0]['text']
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error en la traducción de ES a JA: {e}")
+        return "Hubo un error al intentar traducir el texto."
+
+
+def translate_ja_to_es(text):
+    url = 'https://api-free.deepl.com/v2/translate'
+    params = {
+        'auth_key': DEEPL_API_KEY,
+        'text': text,
+        'source_lang': 'JA',
+        'target_lang': 'ES'
+    }
+    try:
+        response = requests.post(url, data=params)
+        response.raise_for_status()
+        result = response.json()
+        return result['translations'][0]['text']
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error en la traducción de JA a ES: {e}")
+        return "Hubo un error al intentar traducir el texto."
