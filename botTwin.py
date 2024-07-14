@@ -9,6 +9,8 @@ test_channel = token_1.test_bot
 stream_channel = token_1.stream_twin
 
 main_channel = token_1.test_bot
+
+
 client = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
 # Configuración del logger
@@ -37,12 +39,18 @@ async def my_help(ctx):
 
 @client.command(name="esja")
 async def translate_es_to_ja_command(ctx, *, text: str):
+    if ctx.channel.id not in allowed_channels:
+        await ctx.send("Este comando solo se puede usar en los canales permitidos.")
+        return
     translation = translate_es_to_ja(text)
     await ctx.send(f"Traducción al japonés: {translation}")
 
 
 @client.command(name="jaes")
 async def translate_ja_to_es_command(ctx, *, text: str):
+    if ctx.channel.id not in allowed_channels:
+        await ctx.send("Este comando solo se puede usar en los canales permitidos.")
+        return
     translation = translate_ja_to_es(text)
     await ctx.send(f"Traducción al español: {translation}")
 
@@ -123,5 +131,6 @@ async def check_latest_video():
         if error_channel:
             await error_channel.send(f"Ocurrió un error en check_latest_video: {e}")
         logging.error(f"Error en check_latest_video: {e}")
+
 
 client.run(token_1.token)

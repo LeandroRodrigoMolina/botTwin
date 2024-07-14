@@ -131,37 +131,34 @@ def save_min_date(min_date, file_path):
         file.write(min_date.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
-def translate_es_to_ja(text):
+# Función auxiliar para traducir texto utilizando las claves de DeepL
+def translate(text, source_lang, target_lang):
     url = 'https://api-free.deepl.com/v2/translate'
     params = {
-        'auth_key': DEEPL_API_KEY,
         'text': text,
-        'source_lang': 'ES',
-        'target_lang': 'JA'
+        'source_lang': source_lang,
+        'target_lang': target_lang
     }
-    try:
-        response = requests.post(url, data=params)
-        response.raise_for_status()
-        result = response.json()
-        return result['translations'][0]['text']
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error en la traducción de ES a JA: {e}")
-        return "Hubo un error al intentar traducir el texto."
+
+    for key in DEEPL_API_KEYS:
+        params['auth_key'] = key
+        try:
+            response = requests.post(url, data=params)
+            response.raise_for_status()
+            result = response.json()
+            return result['translations'][0]['text']
+        except requests.exceptions.RequestException as e:
+            if '456' in str(e):
+                logging.warning(f"Limite de caracteres excedido con la clave {key}. Intentando con la siguiente clave.")
+                continue
+            logging.error(f"Error en la traducción: {e}")
+            return "Hubo un error al intentar traducir el texto."
+    return "No se pudo traducir el texto, límite de caracteres excedido en ambas claves."
+
+
+def translate_es_to_ja(text):
+    return translate(text, 'ES', 'JA')
 
 
 def translate_ja_to_es(text):
-    url = 'https://api-free.deepl.com/v2/translate'
-    params = {
-        'auth_key': DEEPL_API_KEY,
-        'text': text,
-        'source_lang': 'JA',
-        'target_lang': 'ES'
-    }
-    try:
-        response = requests.post(url, data=params)
-        response.raise_for_status()
-        result = response.json()
-        return result['translations'][0]['text']
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error en la traducción de JA a ES: {e}")
-        return "Hubo un error al intentar traducir el texto."
+    return translate(text, 'JA', 'ES')
